@@ -1,0 +1,46 @@
+* CoreFoundation.zig
+
+=corefoundation.zig= is a (WIP) Zig interface to CoreFoundation and Foundation,
+the Objective-C / C frameworks powering much of the macOS ecosystem.
+
+To add this package to your project, run this
+
+#+begin_src bash
+  $ zig fetch --save git+https://github.com/robbielyman/corefoundation.zig#main
+#+end_src
+
+Then in your =build.zig= you can add this:
+
+#+begin_src zig
+  const core_foundation = b.dependency("corefoundation.zig", .{
+      .target = target,
+      .optimize = optimize,
+  });
+
+  // For whatever you're building; in this case let's assume it's called exe.
+  exe.root_module.addImport("cf", core_foundation.module("corefoundation"));
+#+end_src
+
+and in your source code:
+
+#+begin_src zig
+  // import
+  const cf = @import("cf");
+
+  // set up an allocator, for instance
+  var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
+  defer _ = gpa.deinit();
+  const allocator = gpa.allocator();
+  const ref, const data = try cf.base.AllocatorRef.fromZigAllocator(allocator);
+  defer allocator.destroy(data);
+  ref.setAsDefault();
+  const type_ref: *base.TypeRef = @ptrCast(ref);
+  const str = string.NSString.fromZigFmt("the hash of the allocator is 0x{x}", .{
+      @intFromEnum(type_ref.hash()),
+  }).?;
+  // comment the line below out and you'll see that the gpa catches the leak!
+  defer str.msgSend(void, "release", .{});
+  // the above is equivalent to
+  // defer base.TypeRef.fromId(str.asId()).release();
+  std.debug.print("{s}", .{ str.getUTF8String().? });
+#+end_src
