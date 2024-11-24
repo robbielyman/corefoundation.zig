@@ -1,0 +1,11 @@
+.{
+    .name = "corefoundation.zig",
+    .version = "0.1.0",
+    .paths = .{ "build.zig", "build.zig.zon", "src" },
+    .dependencies = .{
+        .objz = .{
+            .url = "git+https://github.com/robbielyman/objz?ref=main#d23d7b09f1f0a081e866b8fdddc0675bd62c3127",
+            .hash = "1220114de037988c04d10a80e0d7c4243720bd3effe7a3bb939b74e07e3e60eb1a36",
+        },
+    },
+}
