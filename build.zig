@@ -19,7 +19,6 @@ pub fn build(b: *std.Build) !void {
     const objz = b.dependency("objz", .{
         .target = target,
         .optimize = optimize,
-        .@"add-paths" = true,
     });
     corefoundation.addImport("objz", objz.module("objz"));
     tests.root_module.addImport("objz", objz.module("objz"));

@@ -1,4 +1,31 @@
 pub const NSString = opaque {
+    pub const Encoding = enum(NS.Unsigned) {
+        ascii = 1,
+        nextstep = 2,
+        japanese_EUC = 3,
+        utf8 = 4,
+        iso_latin_1 = 5,
+        symbol = 6,
+        nonlossy_ascii = 7,
+        shift_jis = 8,
+        iso_latin_2 = 9,
+        unicode = 10,
+        windows_cp1251 = 11,
+        windows_cp1252 = 12,
+        windosw_cp1253 = 13,
+        windows_cp1254 = 14,
+        windows_cp1250 = 15,
+        iso_2022_jp = 21,
+        macos_roman = 30,
+        utf16_big_endian = 0x90000100,
+        utf16_little_endian = 0x94000100,
+        utf32 = 0x8c000100,
+        utf32_big_endian = 0x98000100,
+        utf32_little_endian = 0x9c000100,
+
+        pub const utf16: Encoding = .unicode;
+    };
+
     const Inner = objz.Type("NSString");
 
     pub const msgSend = Inner.msgSend;
@@ -20,7 +47,7 @@ pub const NSString = opaque {
         const cl = Inner.class() orelse return null;
         return cl.msgSend(?*NSString, "stringWithBytes:length:encoding:", .{
             slice.ptr,
-            @as(NSUInteger, @intCast(slice.len)),
+            @as(NS.Unsigned, @intCast(slice.len)),
             @intFromEnum(Encoding.utf8),
         });
     }
@@ -29,22 +56,12 @@ pub const NSString = opaque {
     pub fn fromOwnedUTF8Slice(slice: []const u8, allocator: std.mem.Allocator) ?*NSString {
         const cl = Inner.class() orelse return null;
         const nsstring = cl.msgSend(*objz.Id, "alloc", .{});
-        const Block = objz.Block(struct { data: ?*anyopaque, vtable: ?*const anyopaque }, .{ *anyopaque, NSUInteger }, void);
-        const blk = Block.init(.{ .data = allocator.ptr, .vtable = allocator.vtable }, struct {
-            fn free(ctx: *const Block.Context, ptr: *const anyopaque, len: NSUInteger) callconv(.C) void {
-                const ally: std.mem.Allocator = .{
-                    .ptr = ctx.data orelse return,
-                    .vtable = @ptrCast(@alignCast(ctx.vtable orelse return)),
-                };
-                const p: [*]const u8 = @ptrCast(@alignCast(ptr));
-                ally.free(p[0..@intCast(len)]);
-                const blk: *const Block = @ptrCast(ctx);
-                @constCast(blk).deinit();
-            }
-        }.free) catch return null;
+        const context = deallocationBlockFromAllocator(allocator);
+        const blk: *DeallocationBlock = .copyFromContext(&context);
+        defer blk.release();
         return nsstring.msgSend(?*NSString, "initWithBytesNoCopy:length:encoding:deallocator:", .{
             slice.ptr,
-            @as(NSUInteger, @intCast(slice.len)),
+            @as(NS.Unsigned, @intCast(slice.len)),
             @intFromEnum(Encoding.utf8),
             blk,
         });
@@ -68,6 +85,8 @@ pub const NSString = opaque {
 };
 
 pub const NSMutableString = struct {
+    pub const Encoding = NSString.Encoding;
+
     const Inner = objz.Type("NSMutableString");
 
     pub const msgSend = Inner.msgSend;
@@ -89,7 +108,7 @@ pub const NSMutableString = struct {
         const cl = Inner.class() orelse return null;
         return cl.msgSend(?*NSMutableString, "stringWithBytes:length:encoding:", .{
             slice.ptr,
-            @as(NSUInteger, @intCast(slice.len)),
+            @as(NS.Unsigned, @intCast(slice.len)),
             @intFromEnum(Encoding.utf8),
         });
     }
@@ -98,22 +117,12 @@ pub const NSMutableString = struct {
     pub fn fromOwnedUTF8Slice(slice: []const u8, allocator: std.mem.Allocator) ?*NSMutableString {
         const cl = Inner.class() orelse return null;
         const nsstring = cl.msgSend(*objz.Id, "alloc", .{});
-        const Block = objz.Block(struct { data: ?*anyopaque, vtable: ?*const anyopaque }, .{ *anyopaque, NSUInteger }, void);
-        const blk = Block.init(.{ .data = allocator.ptr, .vtable = allocator.vtable }, struct {
-            fn free(ctx: *const Block.Context, ptr: *const anyopaque, len: NSUInteger) callconv(.C) void {
-                const ally: std.mem.Allocator = .{
-                    .ptr = ctx.data orelse return,
-                    .vtable = @ptrCast(@alignCast(ctx.vtable orelse return)),
-                };
-                const p: [*]const u8 = @ptrCast(@alignCast(ptr));
-                ally.free(p[0..@intCast(len)]);
-                const blk: *const Block = @ptrCast(ctx);
-                @constCast(blk).deinit();
-            }
-        }.free) catch return null;
+        const ctx = deallocationBlockFromAllocator(allocator);
+        const blk: *DeallocationBlock = .copyFromContext(&ctx);
+        defer blk.release();
         return nsstring.msgSend(?*NSMutableString, "initWithBytesNoCopy:length:encoding:deallocator:", .{
             slice.ptr,
-            @as(NSUInteger, @intCast(slice.len)),
+            @as(NS.Unsigned, @intCast(slice.len)),
             @intFromEnum(Encoding.utf8),
             blk,
         });
@@ -150,35 +159,11 @@ pub const NSMutableString = struct {
     }
 };
 
-pub const Encoding = enum(NSUInteger) {
-    ascii = 1,
-    nextstep = 2,
-    japanese_EUC = 3,
-    utf8 = 4,
-    iso_latin_1 = 5,
-    symbol = 6,
-    nonlossy_ascii = 7,
-    shift_jis = 8,
-    iso_latin_2 = 9,
-    unicode = 10,
-    windows_cp1251 = 11,
-    windows_cp1252 = 12,
-    windosw_cp1253 = 13,
-    windows_cp1254 = 14,
-    windows_cp1250 = 15,
-    iso_2022_jp = 21,
-    macos_roman = 30,
-    utf16_big_endian = 0x90000100,
-    utf16_little_endian = 0x94000100,
-    utf32 = 0x8c000100,
-    utf32_big_endian = 0x98000100,
-    utf32_little_endian = 0x9c000100,
-
-    pub const utf16: Encoding = .unicode;
-};
-
+const deallocation = @import("deallocation_block.zig");
+const DeallocationBlock = deallocation.DeallocationBlock;
+const deallocationBlockFromAllocator = deallocation.deallocationBlockFromAllocator;
 const objz = @import("objz");
-const NSUInteger = @import("runtime.zig").NSUinteger;
+const NS = @import("root.zig").NS;
 const std = @import("std");
 
 test NSString {
