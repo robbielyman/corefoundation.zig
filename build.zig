@@ -11,9 +11,11 @@ pub fn build(b: *std.Build) !void {
     });
 
     const tests = b.addTest(.{
-        .target = target,
-        .optimize = optimize,
-        .root_source_file = b.path("src/root.zig"),
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .root_source_file = b.path("src/root.zig"),
+        }),
     });
 
     const objz = b.dependency("objz", .{

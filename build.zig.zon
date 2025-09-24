@@ -5,8 +5,12 @@
     .paths = .{ "build.zig", "build.zig.zon", "src" },
     .dependencies = .{
         .objz = .{
-            .url = "git+https://github.com/robbielyman/objz#a0641c0d0b53f53d19c71d7c4ff6ad20fc07a5de",
-            .hash = "objz-0.1.0-YM-ZhTgYAQCTO07ej73QgkEvyoPfTL4JbQIgGUxuOmKg",
+            .url = "git+https://github.com/robbielyman/objz#36c5f5d2de6a5d9176b68a80df93bd0c528d1af8",
+            .hash = "objz-0.1.0-YM-ZhZwXAQBRPuMag4z7g6xhFYuqHntJCKu0Q-FiM8WZ",
+        },
+        .macos_sdk = .{
+            .url = "git+https://github.com/robbielyman/zig-build-macos-sdk#034bd9538edf021b538b558daebc95a5ff5a3445",
+            .hash = "macos_sdk-0.0.0-mYT8-6_YjANSIU-s7T5wMQwyA8ucamYaf6HGq6VkeXpP",
         },
     },
 }
