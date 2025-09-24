@@ -8,7 +8,7 @@ pub fn deallocationBlockFromAllocator(allocator: std.mem.Allocator) Deallocation
         .allocator_ptr = allocator.ptr,
         .allocator_vtable = allocator.vtable,
         .invoke = struct {
-            fn free(blk: *const anyopaque, ptr: ?*const anyopaque, len: NS.Unsigned) callconv(.C) void {
+            fn free(blk: *const anyopaque, ptr: ?*const anyopaque, len: NS.Unsigned) callconv(.c) void {
                 if (ptr == null or len == 0) return;
                 const ctx = DeallocationBlock.contextCast(blk);
                 const ally: std.mem.Allocator = .{

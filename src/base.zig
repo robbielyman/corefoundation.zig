@@ -31,18 +31,18 @@ pub const ComparisonResult = enum(c_long) {
     greater_than = 1,
 };
 
-pub const ComparatorFunction = *const fn (val1: ?*const anyopaque, val2: ?*const anyopaque, contex: ?*anyopaque) callconv(.C) ComparisonResult;
+pub const ComparatorFunction = *const fn (val1: ?*const anyopaque, val2: ?*const anyopaque, contex: ?*anyopaque) callconv(.c) ComparisonResult;
 
 pub const AllocatorContext = extern struct {
     version: Index,
     info: ?*anyopaque,
-    retain: ?*const fn (info: ?*const anyopaque) callconv(.C) ?*const anyopaque,
-    release: ?*const fn (info: ?*const anyopaque) callconv(.C) void,
-    copy_description: ?*const fn (info: ?*const anyopaque) callconv(.C) ?*NSString,
-    allocate: ?*const fn (alloc_size: Index, hint: OptionFlags, info: ?*anyopaque) callconv(.C) ?*anyopaque,
-    reallocate: ?*const fn (ptr: ?*anyopaque, newsize: Index, opts: OptionFlags, info: ?*anyopaque) callconv(.C) ?*anyopaque,
-    deallocate: ?*const fn (ptr: ?*anyopaque, info: ?*anyopaque) callconv(.C) void,
-    preferred_size: ?*const fn (size: Index, hint: OptionFlags, info: ?*anyopaque) callconv(.C) Index,
+    retain: ?*const fn (info: ?*const anyopaque) callconv(.c) ?*const anyopaque,
+    release: ?*const fn (info: ?*const anyopaque) callconv(.c) void,
+    copy_description: ?*const fn (info: ?*const anyopaque) callconv(.c) ?*NSString,
+    allocate: ?*const fn (alloc_size: Index, hint: OptionFlags, info: ?*anyopaque) callconv(.c) ?*anyopaque,
+    reallocate: ?*const fn (ptr: ?*anyopaque, newsize: Index, opts: OptionFlags, info: ?*anyopaque) callconv(.c) ?*anyopaque,
+    deallocate: ?*const fn (ptr: ?*anyopaque, info: ?*anyopaque) callconv(.c) void,
+    preferred_size: ?*const fn (size: Index, hint: OptionFlags, info: ?*anyopaque) callconv(.c) Index,
 };
 
 extern "c" fn CFAllocatorGetTypeId() TypeID;
@@ -107,8 +107,8 @@ pub const AllocatorRef = opaque {
     extern "c" fn CFAllocatorGetContext(allocator: ?*AllocatorRef, ctx: ?*AllocatorContext) void;
 };
 
-const alignment = @alignOf(std.c.max_align_t);
-const offset: usize = @max(alignment, @sizeOf(Header));
+const alignment: std.mem.Alignment = .of(std.c.max_align_t);
+const offset: usize = @max(alignment.toByteUnits(), @sizeOf(Header));
 fn totalSize(size: Index) usize {
     const total_size: usize = @intCast(@intFromEnum(size));
     return total_size + offset;
@@ -119,7 +119,7 @@ fn getAllocator(info: ?*anyopaque) ?std.mem.Allocator {
     return allocator.*;
 }
 
-fn allocate(size: Index, _: OptionFlags, info: ?*anyopaque) callconv(.C) ?*anyopaque {
+fn allocate(size: Index, _: OptionFlags, info: ?*anyopaque) callconv(.c) ?*anyopaque {
     const total_size = totalSize(size);
     const allocator = getAllocator(info) orelse return null;
     const bytes = allocator.alignedAlloc(u8, alignment, total_size) catch return null;
@@ -128,14 +128,14 @@ fn allocate(size: Index, _: OptionFlags, info: ?*anyopaque) callconv(.C) ?*anyop
     return bytes.ptr + offset;
 }
 
-fn reallocate(ptr: ?*anyopaque, newsize: Index, opts: OptionFlags, info: ?*anyopaque) callconv(.C) ?*anyopaque {
+fn reallocate(ptr: ?*anyopaque, newsize: Index, opts: OptionFlags, info: ?*anyopaque) callconv(.c) ?*anyopaque {
     const pointer = ptr orelse return allocate(newsize, opts, info);
     const total_size = totalSize(newsize);
     const allocator = getAllocator(info) orelse return null;
-    const bytes: [*]align(alignment) u8 = @ptrCast(@alignCast(pointer));
+    const bytes: [*]align(alignment.toByteUnits()) u8 = @ptrCast(@alignCast(pointer));
     const header_ptr: *Header = @ptrCast(bytes - offset);
-    const old_slice: []align(alignment) u8 = old_slice: {
-        const slice_start: [*]align(alignment) u8 = @ptrCast(@alignCast(header_ptr));
+    const old_slice: []align(alignment.toByteUnits()) u8 = old_slice: {
+        const slice_start: [*]align(alignment.toByteUnits()) u8 = @ptrCast(@alignCast(header_ptr));
         break :old_slice slice_start[0..header_ptr.allocated_size];
     };
     const new_bytes = allocator.realloc(old_slice, total_size) catch return null;
@@ -144,13 +144,13 @@ fn reallocate(ptr: ?*anyopaque, newsize: Index, opts: OptionFlags, info: ?*anyop
     return new_bytes.ptr + offset;
 }
 
-fn deallocate(ptr: ?*anyopaque, info: ?*anyopaque) callconv(.C) void {
+fn deallocate(ptr: ?*anyopaque, info: ?*anyopaque) callconv(.c) void {
     const pointer = ptr orelse return;
     const allocator = getAllocator(info) orelse return;
-    const bytes: [*]align(alignment) u8 = @ptrCast(@alignCast(pointer));
+    const bytes: [*]align(alignment.toByteUnits()) u8 = @ptrCast(@alignCast(pointer));
     const header_ptr: *Header = @ptrCast(bytes - offset);
-    const old_slice: []align(alignment) u8 = old_slice: {
-        const slice_start: [*]align(alignment) u8 = @ptrCast(@alignCast(header_ptr));
+    const old_slice: []align(alignment.toByteUnits()) u8 = old_slice: {
+        const slice_start: [*]align(alignment.toByteUnits()) u8 = @ptrCast(@alignCast(header_ptr));
         break :old_slice slice_start[0..header_ptr.allocated_size];
     };
     allocator.free(old_slice);
