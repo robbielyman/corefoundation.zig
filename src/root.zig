@@ -40,9 +40,7 @@ test "allocation" {
     // set up Zig allocator and CFAllocatorRef
     var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-    const ally, const data = try base.AllocatorRef.fromZigAllocator(allocator);
-    defer allocator.destroy(data);
+    const ally = try base.AllocatorRef.fromZigAllocator(&gpa);
 
     // replace the CoreFoundation allocator
     const default = base.AllocatorRef.getDefault().?;
